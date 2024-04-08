@@ -51,7 +51,9 @@ t0 = {'source': 'initial',
 
 available_place = {'trigger': 'Reserve',
       'source': 'Unbooked',
-      'target': 'Booked'}
+      'target': 'Booked',
+      ##MAKE SURE THAT THIS IS CHANGED FOR THE STM DRAWING SINCE THIS IS NOT AN ENTRY ANY MORE
+      'effect': 'generate_reservation_key()'}
 
 left = {'trigger': 'Leaving',
       'source': 'Check_in',
@@ -75,7 +77,6 @@ t2 = {'trigger': 't2',
 Unbooked = {'name': 'Unbooked'}
 
 Booked = {'name': 'Booked',
-       'entry': 'generate_reservation_key()',
        'entry': 'start_timer("t1", 5000)',
        'exit': 'stop_timer("t1")'
        }
