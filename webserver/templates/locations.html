@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+{% for id, location in locations.items() %}
+    <a class="button" href="locations/{{id}}">{{location.name}}</a>
+{% endfor %}
