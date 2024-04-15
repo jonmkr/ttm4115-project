@@ -4,4 +4,25 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
+<h2>Availability: {{location.availability}}/{{location.max_capacity}}</h2>
 
+<button onclick="onClick()" {% if reservation is not none %}disabled{% endif %}>
+    Reserve
+</button>
+
+{% if reservation is not none %}
+<div id="code-div">
+    <h3>Your reservation code is</h3>
+    <h1 id="code">{{reservation.code}}</h1>
+    <h3>and expires at {{reservation.expiry}}</h3>
+</div>
+{% endif %}
+
+<script type="text/javascript">
+    async function onClick() {
+        console.log("On Click")
+        await fetch(window.location.href + "/generate")
+
+        location.reload()
+    }
+</script>
