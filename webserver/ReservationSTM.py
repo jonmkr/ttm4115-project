@@ -6,6 +6,7 @@ from IPython.display import display
 
 class Reservation:
 
+    #creating buttons for testing the STM
     def on_button_reserve(self, b):
         self.stm.send('Reserve')
         print("Slot is now reserved and you are in the Booked state")
@@ -77,11 +78,11 @@ t2 = {'trigger': 't2',
 Unbooked = {'name': 'Unbooked'}
 
 Booked = {'name': 'Booked',
-       'entry': 'start_timer("t1", 5000)',
-       'exit': 'stop_timer("t1")'
-       }
+       'entry': 'start_timer("t1", 5000)'
+        }
 
-Check_in = {'name': 'Check_in'}
+Check_in = {'name': 'Check_in',
+            'entry': 'stop_timer("t1")'}
 
 Penalty = {'name': 'Penalty',
       'entry': 'start_timer("t2", 14400)'
