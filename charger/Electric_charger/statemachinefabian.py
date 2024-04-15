@@ -25,25 +25,25 @@ class Charger:
 
 
     def available():
-        test
+        test = test
 
     def reserved():
-        test
+        test = test
 
     def ban_user():
-        test
+        test = test
 
     def charging():
-        test
+        test = test
     
     def charging_battery_full():
-        test
+        test = test
 
     def overcharge():
-        test
+        test = test
 
     def finish_charging():
-        test
+        test = test
 
 charger = Charger()
 #Initial transitiion
