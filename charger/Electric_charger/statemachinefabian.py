@@ -22,10 +22,11 @@ class Charger:
         # Buttons
         self.button_start = widgets.Button(description="Start charging")
         self.button_reserve = widgets.Button(description="Reserve charger")
+        self.button_stop = widgets.Button(description="Stop charger")
         
         # Text field to display states
         self.text = widgets.Text(value='', placeholder='', description='String:', disabled = False)
-        display(self.text, self.button_start, self.button_reserve)
+        display(self.text, self.button_start, self.button_reserve, self.button_stop)
 
 
     def available(self):
