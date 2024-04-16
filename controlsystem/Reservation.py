@@ -5,16 +5,18 @@
 from threading import Thread
 import paho.mqtt.client as mqtt
 import random
+import json
 
 
 CAPACITY = 10
 MQTT_BROKER = "mqtt.item.ntnu.no"
 MQTT_PORT = 1883
+TOPIC = "ReservationProcedure"
 
 class ChargingStation:
     
     def __init__(self):
-        self.spot = {i: None for i in range(CAPACITY)}
+        self.spot = [None] * CAPACITY
         self.free_spot = []
 
 
@@ -25,9 +27,16 @@ class ChargingStation:
     def on_message(self, client, userdata, msg):
         print("on_message(): topic: {}".format(msg.topic))
         
-        random_index = self.reservation()
+        # reservation code comes from Web Server throught Queue() function (Jon's writing the code)
+        reservation_code = Queue()
+        
+        message = {
+            "message" : "Spot Reserved - " + reservation_code,
+            "reservation code" : reservation_code
+        }
+        
         try:
-            self.client.publish("Reserved spot", msg.payload)
+            self.client.publish(TOPIC, json.dumps(message))
         except:
             print("Unreserved spot")
 
@@ -40,7 +49,7 @@ class ChargingStation:
         self.client.connect(broker, port)
 
         #TOPIC
-        self.client.subscribe("ReservationProcedure")
+        self.client.subscribe(TOPIC)
 
         try:
             thread = Thread(target=self.client.loop_forever)
