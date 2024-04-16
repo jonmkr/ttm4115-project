@@ -71,6 +71,7 @@ class ChargingStation:
   
     def update_free_spot_list(self): 
         #Update the free spot list
+        self.free_spot=[]
         for index in range(CAPACITY):
             if self.spot[index] is None:
                 self.free_spot.append(index)
