@@ -39,7 +39,7 @@ class ChargingStation:
         }
         
         try:
-            self.client.publish(TOPIC, json.dumps(message))
+            self.client.publish(TOPIC + "/Reserving", json.dumps(message))
         except:
             print("Unreserved spot")
 
@@ -51,8 +51,9 @@ class ChargingStation:
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
-        #TOPIC
-        self.client.subscribe(TOPIC)
+        # There are 3 topics: Reserving, Updating, Free a spot
+        # I want that EC is subsribed in all three
+        self.client.subscribe(TOPIC + "/")
 
         try:
             thread = Thread(target=self.client.loop_forever)

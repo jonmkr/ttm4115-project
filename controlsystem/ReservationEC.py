@@ -38,12 +38,12 @@ class EletricCharger:
         # Both procedure send the message to Charging Station
         if TIME :
             try:
-                self.client.publish(TOPIC, "Car Arrived")
+                self.client.publish(TOPIC + "/Updating", "Car Arrived")
             except:
                 print("Unreserved spot")
         else:
             try:
-                self.client.publish(TOPIC, "Car NOT Arrived")
+                self.client.publish(TOPIC + "/Updating", "Car NOT Arrived")
             except:
                 print("Unreserved spot")
 
@@ -55,12 +55,13 @@ class EletricCharger:
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
-        #TOPIC
-        self.client.subscribe(TOPIC)
+        # There are 3 topics: Reserving, Updating, Free a spot
+        # I want that EC is subsribed in all three
+        self.client.subscribe(TOPIC + "/")
 
         try:
             thread = Thread(target=self.client.loop_forever)
             thread.start()
         except KeyboardInterrupt:
-            print("Interrupted")
+            print("Interrupted")s
             self.client.disconnect()
