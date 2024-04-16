@@ -30,18 +30,25 @@ class ChargingStation:
         
         # reservation code comes from Web Server throught Queue() function (Jon's writing the code)
         reservation_code = Queue()
-        reserved_place = self.reservation(reservation_code)
+        reserved_spot = self.reservation(reservation_code)
         
         message = {
             "message" : "Spot Reserved - " + reservation_code,
             "reservation code" : reservation_code,
-            "reserved place" : reserved_place
+            "reserved spot" : reserved_spot
         }
         
+        # This is for Reservating Messages
         try:
-            self.client.publish(TOPIC, json.dumps(message))
+            self.client.publish(TOPIC + "/Reserving", json.dumps(message))
         except:
             print("Unreserved spot")
+            
+        # This is for FreeUP Messages
+        try:
+            self.client.publish(TOPIC + "/FreeUp", "Free Spot Available")
+        except:
+            print("Error with the free up of a spot")
 
 
     def start(self):
@@ -51,8 +58,9 @@ class ChargingStation:
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
-        #TOPIC
-        self.client.subscribe(TOPIC)
+        # There are 3 topics: Reserving, Updating, FreeUP a spot
+        # I want that CS is subsribed in all three
+        self.client.subscribe(TOPIC + "/")
 
         try:
             thread = Thread(target=self.client.loop_forever)
@@ -73,7 +81,7 @@ class ChargingStation:
 
         # spot free -> none     spot reserved -> ""
 
-        self.update_free_spot_list(self)
+        self.update_free_spot_list()
                 
         if len(self.free_spot) == 0:
             return None
@@ -87,7 +95,7 @@ class ChargingStation:
     def free_up_spot(self, spot_number):
         #Function with spot number as input, and frees up the spot in the lists in the control system
         self.spot[spot_number]=None
-        self.update_free_spot_list(self)
+        self.update_free_spot_list()
 
     
     def update_availability(self, spot_number, update_massage):
