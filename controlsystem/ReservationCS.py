@@ -16,6 +16,7 @@ TOPIC = "ReservationProcedure"
 class ChargingStation:
     
     def __init__(self):
+        # spot free -> none     spot reserved -> ""
         self.spot = [None] * CAPACITY
         self.free_spot = []
 
@@ -62,19 +63,24 @@ class ChargingStation:
   
             
     def reservation(self, code_reservation):
-        
+        #Function which takes the reservation code as input, 
+        #Returns None if there are free spots, else it returns the spot number. 
+
+        # spot free -> none     spot reserved -> ""
+
+        #Update the free spot
         for index in range(CAPACITY):
             if self.spot[index] is None:
-                self.free_spot.insert(index)
+                self.free_spot.append(index)
                 
         if len(self.free_spot) == 0:
             return None
         else:
-            random_index = random.choice(self.free_spot)
-            self.free_spot.remove(random_index)
-            self.spot[random_index] = str(code_reservation)
+            spot_number = random.choice(self.free_spot)
+            self.free_spot.remove(spot_number)
+            self.spot[spot_number] = str(code_reservation)
             
-        return random_index
+        return spot_number
     
             
     
