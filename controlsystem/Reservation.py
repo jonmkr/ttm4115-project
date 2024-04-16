@@ -61,17 +61,19 @@ class ChargingStation:
             print("Interrupted")
             self.client.disconnect()
   
+    def update_free_spot_list(self): 
+        #Update the free spot list
+        for index in range(CAPACITY):
+            if self.spot[index] is None:
+                self.free_spot.append(index)
             
-    def reservation(self, code_reservation):
+    def reserve_spot(self, code_reservation):
         #Function which takes the reservation code as input, 
         #Returns None if there are free spots, else it returns the spot number. 
 
         # spot free -> none     spot reserved -> ""
 
-        #Update the free spot
-        for index in range(CAPACITY):
-            if self.spot[index] is None:
-                self.free_spot.append(index)
+        self.update_free_spot_list(self)
                 
         if len(self.free_spot) == 0:
             return None
@@ -82,7 +84,11 @@ class ChargingStation:
             
         return spot_number
     
-            
+    def free_up_spot(self, spot_number):
+        #Function with spot number as input, and frees up the spot in the lists in the control system
+        self.spot[spot_number]=None
+        self.update_free_spot_list(self)
+
     
     def update_availability(self, spot_number, update_massage):
             # spot free -> none     spot reserved -> ""
