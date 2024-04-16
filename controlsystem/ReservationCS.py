@@ -81,7 +81,7 @@ class ChargingStation:
 
         # spot free -> none     spot reserved -> ""
 
-        self.update_free_spot_list(self)
+        self.update_free_spot_list()
                 
         if len(self.free_spot) == 0:
             return None
@@ -95,7 +95,7 @@ class ChargingStation:
     def free_up_spot(self, spot_number):
         #Function with spot number as input, and frees up the spot in the lists in the control system
         self.spot[spot_number]=None
-        self.update_free_spot_list(self)
+        self.update_free_spot_list()
 
     
     def update_availability(self, spot_number, update_massage):
