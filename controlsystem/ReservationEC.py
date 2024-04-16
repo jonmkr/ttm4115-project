@@ -55,7 +55,7 @@ class EletricCharger:
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
-        # There are 3 topics: Reserving, Updating, Free a spot
+        # There are 3 topics: Reserving, Updating, FreeUP a spot
         # I want that EC is subsribed in all three
         self.client.subscribe(TOPIC + "/")
 
@@ -63,5 +63,5 @@ class EletricCharger:
             thread = Thread(target=self.client.loop_forever)
             thread.start()
         except KeyboardInterrupt:
-            print("Interrupted")s
+            print("Interrupted")
             self.client.disconnect()

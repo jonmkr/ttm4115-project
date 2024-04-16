@@ -38,10 +38,17 @@ class ChargingStation:
             "reserved place" : reserved_place
         }
         
+        # This is for Reservating Messages
         try:
             self.client.publish(TOPIC + "/Reserving", json.dumps(message))
         except:
             print("Unreserved spot")
+            
+        # This is for FreeUP Messages
+        try:
+            self.client.publish(TOPIC + "/FreeUp", "Free Spot Available")
+        except:
+            print("Error with the free up of a spot")
 
 
     def start(self):
@@ -51,8 +58,8 @@ class ChargingStation:
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
-        # There are 3 topics: Reserving, Updating, Free a spot
-        # I want that EC is subsribed in all three
+        # There are 3 topics: Reserving, Updating, FreeUP a spot
+        # I want that CS is subsribed in all three
         self.client.subscribe(TOPIC + "/")
 
         try:
