@@ -2,14 +2,16 @@ from stmpy import Machine, Driver
 
 import ipywidgets as widgets
 from IPython.display import display
+import os
+print(os.listdir())
 
 
 class Charger:
 
     def load_images(self):
-        self.start = open("images/green_on.png", "rb").read()
-        self.reserve = open("images/yellow_on.png", "rb").read()
-        self.stop = open("images/red_on.png", "rb").read()
+        self.start = open("ttm4115-project/charger/Electric_charger/images/green_on.png", "rb").read()
+        self.reserve = open("ttm4115-project/charger/Electric_charger/images/yellow_on.png", "rb").read()
+        self.stop = open("ttm4115-project/charger/Electric_charger/images/red_on.png", "rb").read()
 
     # Send a message to start charging
     def on_button_start(self, b_start):
@@ -34,7 +36,7 @@ class Charger:
 
         # Text field to display states
         self.text = widgets.Text(value='', placeholder='', description='String:', disabled = False)
-        display(self.text, self.button_start, self.button_reserve, self.button_stop)
+        display(self.text,  self.button_start, self.button_reserve, self.button_stop)
 
 
     def __init__(self):
