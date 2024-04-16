@@ -11,9 +11,9 @@ class Reservation:
         self.stm.send('Reserve')
         print("Slot is now reserved and you are in the Booked state")
 
-    def on_button_checkIn(self, b):
-        self.stm.send('CheckingIn')
-        print("Slot is now checked in at and you are in the Check In state")
+    def on_button_plugIn(self, b):
+        self.stm.send('PlugingIn')
+        print("Slot is now pluged in at and you are in the Check In state")
 
     def on_button_leave(self, b):
         self.stm.send('Leaving')
@@ -31,8 +31,8 @@ class Reservation:
         self.button_reserve = widgets.Button(description="Reserve")
         self.button_reserve.on_click(self.on_button_reserve)
         # another button
-        self.button_checkIn = widgets.Button(description="Check in")
-        self.button_checkIn.on_click(self.on_button_checkIn)
+        self.button_plugIn = widgets.Button(description="Check in")
+        self.button_plugIn.on_click(self.on_button_plugIn)
         # another button
         self.button_leaving = widgets.Button(description="Leaving")
         self.button_leaving.on_click(self.on_button_leave)
@@ -50,19 +50,19 @@ reservation = Reservation()
 t0 = {'source': 'initial',
       'target': 'Unbooked'}
 
-available_place = {'trigger': 'Reserve',
+booking_placed = {'trigger': 'Reserve',
       'source': 'Unbooked',
       'target': 'Booked',
       ##MAKE SURE THAT THIS IS CHANGED FOR THE STM DRAWING SINCE THIS IS NOT AN ENTRY ANY MORE
       'effect': 'generate_reservation_key()'}
 
 left = {'trigger': 'Leaving',
-      'source': 'Check_in',
+      'source': 'Plugged_in',
       'target': 'Unbooked'}
 
-check_in = {'trigger': 'CheckingIn',
+plug_in = {'trigger': 'PlugingIn',
       'source': 'Booked',
-      'target': 'Check_in'}
+      'target': 'Plugged_in'}
 
 t1 = {'trigger': 't1',
       'source': 'Booked',
@@ -81,7 +81,7 @@ Booked = {'name': 'Booked',
        'entry': 'start_timer("t1", 5000)'
         }
 
-Check_in = {'name': 'Check_in',
+Plugged_in = {'name': 'Plugged_in',
             'entry': 'stop_timer("t1")'}
 
 Penalty = {'name': 'Penalty',
@@ -91,9 +91,9 @@ Penalty = {'name': 'Penalty',
 
 ##Creating and starting the machine
 machine = Machine(name='reservation', 
-                  transitions=[t0, t1, t2, available_place, left, check_in], 
+                  transitions=[t0, t1, t2, booking_placed, left, plug_in], 
                   obj=reservation, 
-                  states=[Unbooked, Booked, Check_in, Penalty])
+                  states=[Unbooked, Booked, Plugged_in, Penalty])
 reservation.stm = machine
 
 driver = Driver()
