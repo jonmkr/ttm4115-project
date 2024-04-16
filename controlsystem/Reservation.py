@@ -40,7 +40,7 @@ class ChargingStation:
         self.client.connect(broker, port)
 
         #TOPIC
-        self.client.subscribe("ttm4115")
+        self.client.subscribe("ReservationProcedure")
 
         try:
             thread = Thread(target=self.client.loop_forever)
@@ -67,15 +67,17 @@ class ChargingStation:
     
             
     
-    def check_availability(self, random_index):
-            if random_index is None:
-                return None
+    def update_availability(self, spot_number, update_massage):
+            # spot free -> none     spot reserved -> ""
+            if update_massage is None:
+                self.spot[spot_number] = None
             else:
-                self.spot[random_index] = ""
+                self.spot[spot_number] = ""
          
                 
-    # function to reserve a spot
-    def receive_http_request(self):
-        # Handle the HTTP request and call the reserve_spot function
-        self.reserve_spot()
+    ### TO DO ###
+    
+    # function to receve a http message with the reservation code from Web Server
+    
+    # function to receve a http message with the expiration time from Web Server
         
