@@ -60,7 +60,7 @@ t1 = {'trigger':'reserve_charger',
       'source':'available',
       'target':'reserved'}
 
-#Transition from reserved to charging
+#Transition from reserved to ban_user
 
 t2 = {'trigger':'start_charging',
       'source':'reserved',
@@ -72,25 +72,68 @@ t3 = {'trigger': 'start_charging',
       'target':'charging'}
 
 #Transition from charging to finish_charging
-t4 = {}
+t4 = {'trigger':'charging_stopped',
+      'source': 'charging',
+      'target':'finish_charging'}
 
 #Transition from charging to charging_battery_full
-t5 = {}
+t5 = {'trigger':'battery_full',
+      'source':'charging',
+      'target':'charging_battery_full'}
 
 #Transition from charging_battery_full to finish_charging
-t6 = {}
+t6 = {'trigger':'charging_stopped',
+      'source':'charging_battery_full',
+      'target':'finish_charging'}
 
 #Transition from charging_battery_full to overcharge
-t7 = {}
+t7 = {'trigger':'t1',
+      'source':'charging_battery_full',
+      'target':'overcharge'}
+
+#Transition from overcharge to finish_charging
+t8 = {'trigger':'charging_stopped',
+      'source':'overcharge',
+      'target':'finish_charging'}
 
 #Transition from finish_charging to available
-t8 = {}
+t9 = {'trigger':'charger_available',
+      'source':'finish_charging',
+      'target':'available'}
 
-
-
-
+#Transition from ban_user to available
+t10 = {'trigger':'charger_available',
+       'source':'ban_user',
+       'target':'available'}
 
 
 # STATES
 
-machine = Machine(name="charger")
+available = {'name':'available'}
+
+reserved = {'name':'reserved',
+            'entry':'start_timer("t1", 150000)'}
+
+ban_user = {'name':'ban_user',
+            'entry':'user_timeout'}
+
+charging = {'name':'charging',
+            'entry':'start_payment; lock_plug; start_power'}
+
+charging_battery_full = {'name':'charging_battery_full',
+                         'entry':'start_timer("t2", 150000)'}
+
+overcharge = {'name':'overcharge',
+              'entry':'start_overchargepayment'}
+
+finish_charging = {'name':'finish_charging',
+                   'entry':'stop_power; stop_payment; stop_overchargepayment; unlock_plug; charge_customer;'}
+
+
+
+machine = Machine(name="charger", transitions=[t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10], obj=charger, states=[available, reserved, ban_user, charging, charging_battery_full, overcharge, finish_charging])
+charger.stm = machine
+
+driver = Driver()
+driver.add_machine(machine)
+driver.start()
