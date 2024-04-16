@@ -30,12 +30,12 @@ class ChargingStation:
         
         # reservation code comes from Web Server throught Queue() function (Jon's writing the code)
         reservation_code = Queue()
-        reserved_place = self.reservation(reservation_code)
+        reserved_spot = self.reservation(reservation_code)
         
         message = {
             "message" : "Spot Reserved - " + reservation_code,
             "reservation code" : reservation_code,
-            "reserved place" : reserved_place
+            "reserved spot" : reserved_spot
         }
         
         # This is for Reservating Messages
