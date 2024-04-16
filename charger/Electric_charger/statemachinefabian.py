@@ -5,6 +5,12 @@ from IPython.display import display
 
 
 class Charger:
+
+    def load_images(self):
+        self.start = open("images/green_on.png", "rb").read()
+        self.reserve = open("images/yellow_on.png", "rb").read()
+        self.stop = open("images/red_on.png", "rb").read()
+
     # Send a message to start charging
     def on_button_start(self, b_start):
         self.stm.send("start_charging")
@@ -15,18 +21,26 @@ class Charger:
     def on_button_stop(self, b_stop):
         self.stm.send("stop_charger")
 
-
-
-    def __init__(self):
-
+    def display(self):
         # Buttons
         self.button_start = widgets.Button(description="Start charging")
+        self.button_start.on_click(self.on_button_start)
+
         self.button_reserve = widgets.Button(description="Reserve charger")
+        self.button_reserve.on_click(self.on_button_reserve)
+
         self.button_stop = widgets.Button(description="Stop charger")
-        
+        self.button_stop.on_click(self.on_button_stop)
+
         # Text field to display states
         self.text = widgets.Text(value='', placeholder='', description='String:', disabled = False)
         display(self.text, self.button_start, self.button_reserve, self.button_stop)
+
+
+    def __init__(self):
+        self.load_images()
+        self.display()
+
 
 
     def available(self):

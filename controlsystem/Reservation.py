@@ -30,10 +30,12 @@ class ChargingStation:
         
         # reservation code comes from Web Server throught Queue() function (Jon's writing the code)
         reservation_code = Queue()
+        reserved_place = self.reservation(reservation_code)
         
         message = {
             "message" : "Spot Reserved - " + reservation_code,
-            "reservation code" : reservation_code
+            "reservation code" : reservation_code,
+            "reserved place" : reserved_place
         }
         
         try:
@@ -42,12 +44,12 @@ class ChargingStation:
             print("Unreserved spot")
 
 
-    def start(self, broker, port):
+    def start(self):
         self.client = mqtt.Client(callback_api_version=2)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        print("Connecting to {}:{}".format(broker, port))
-        self.client.connect(broker, port)
+        print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
+        self.client.connect(MQTT_BROKER, MQTT_PORT)
 
         #TOPIC
         self.client.subscribe(TOPIC)
