@@ -7,9 +7,27 @@ import json
 from queue import Queue
 
 CAPACITY = 10
-MQTT_BROKER = "mqtt.item.ntnu.no"
 MQTT_PORT = 1883
-TOPIC = "ReservationProcedure"
+MQTT_BROKER = "mqtt.item.ntnu.no"
+
+
+class msg:
+    """
+    This is the format of the message that is sent in all three cases: 
+    RESERVATION, UPDATING, FREEUP_SPOT
+    
+    """
+    def __init__(self, text, reservation_code, spot_position, topic_flag):
+        self.msg = {
+            # content of the message to be printed on the screen
+            "message" : text,
+            # reservation code used to check and manage bookings 
+            "reservation code" : reservation_code,
+            # spot index used to free the spot in case of end of charge or expired booking
+            "spot position" : spot_position,
+            # flag indicating the topic of the message, I don't know if we can also get it in another way 
+            "topic flag" : topic_flag
+        }
 
 class ChargingStation:
     
@@ -66,8 +84,9 @@ class ChargingStation:
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
         # There are 3 topics: Reserving, Updating, FreeUP a spot
-        # I want that CS is subsribed in all three
-        self.client.subscribe(TOPIC + "/")
+        self.client.subscribe("RESERVATION")
+        self.client.subscribe("UPDAITING")
+        self.client.subscribe("FREEUP")
 
         try:
             thread = Thread(target=self.client.loop_forever)
