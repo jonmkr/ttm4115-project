@@ -6,6 +6,8 @@ from threading import Thread
 import paho.mqtt.client as mqtt
 import random
 import json
+from queue import Queue
+
 
 
 CAPACITY = 10
@@ -52,7 +54,7 @@ class ChargingStation:
 
 
     def start(self):
-        self.client = mqtt.Client(callback_api_version=2)
+        self.client = mqtt.Client(callback_api_version = mqtt.CallbackAPIVersion.VERSION1)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
