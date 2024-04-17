@@ -1,14 +1,10 @@
 
 
-
-
 from threading import Thread
 import paho.mqtt.client as mqtt
 import random
 import json
 from queue import Queue
-
-
 
 CAPACITY = 10
 MQTT_BROKER = "mqtt.item.ntnu.no"
@@ -18,8 +14,17 @@ TOPIC = "ReservationProcedure"
 class ChargingStation:
     
     def __init__(self):
-        # spot free -> none     spot reserved -> ""
+        """
+        The 'spot' list has three possible types of data within it:
+        
+        - 'None' -> When the spot is available
+        - '' (empty string) -> When the spot is occupied (the presence of a car in that spot has been confirmed)
+        - '(reservation code)' -> When the spot is reserved and the reserving car has the value in 'reservation code' variable
+        
+        """
+        # at the begginig of the program, all spots are available (all spots are None)
         self.spot = [None] * CAPACITY
+        # this list is used to keep track of the free spots
         self.free_spot = []
 
 
@@ -71,29 +76,54 @@ class ChargingStation:
             print("Interrupted")
             self.client.disconnect()
   
+###----------------------------------------------------------------------------------------------------###  
+
     def update_free_spot_list(self): 
-        #Update the free spot list
+        """
+        Let's scroll the 'spot' list.
+        For all elements that have the value 'None' 
+        we add their index to the 'free spot' list. 
+        
+        """
+        
+        # Each time we use this function we reset the contents of the 'free spot' list. 
+        # Each time we perform the check in its entirety
         self.free_spot=[]
+        
         for index in range(CAPACITY):
             if self.spot[index] is None:
                 self.free_spot.append(index)
-            
+
+        
     def reserve_spot(self, code_reservation):
-        #Function which takes the reservation code as input, 
-        #Returns None if there are free spots, else it returns the spot number. 
+        """
+        Function that takes the 'reservation code' received via http from the web server as input. 
+        This value is inserted into the 'spot' list at a random position among the available ones. 
+        (How do I know which indices in the 'spot' list are available? The available 'spot' list 
+        indices are inserted into the 'free spot' list)
+        
+        """
 
-        # spot free -> none     spot reserved -> ""
-
+        # We update the available spots positions before reserve a spot
         self.update_free_spot_list()
                 
+        # We check if there are places available 
         if len(self.free_spot) == 0:
             return None
         else:
+            # We randomly choose a value within the list. 
+            # This value is equivalent to the index of a free position within the 'spot' list.
             spot_number = random.choice(self.free_spot)
+            
+            # We remove the item we received from the 'free spot' list.
+            # (By now that spot is no longer free)
             self.free_spot.remove(spot_number)
+            
+            # We place in the 'spot' list in position, chosen randomly, the 'reservation code' of the reservation
             self.spot[spot_number] = str(code_reservation)
             
         return spot_number
+    
     
     def free_up_spot(self, spot_number):
         #Function with spot number as input, and frees up the spot in the lists in the control system
