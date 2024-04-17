@@ -5,6 +5,7 @@
 </head>
 
 <h2>Availability: {{location.availability}}/{{location.max_capacity}}</h2>
+<h2>Reservations: {{reservation_count}}</h2>
 
 <button onclick="onClick()" {% if reservation is not none %}disabled{% endif %}>
     Reserve
@@ -14,7 +15,11 @@
 <div id="code-div">
     <h3>Your reservation code is</h3>
     <h1 id="code">{{reservation.code}}</h1>
+    {% if reservation.expired %}
+    <h3>and has expired. You are unable to reserve for another 24 hours.</h3>
+    {% else %}
     <h3>and expires at {{reservation.expiry}}</h3>
+    {% endif %}
 </div>
 {% endif %}
 
