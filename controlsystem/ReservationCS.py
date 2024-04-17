@@ -1,5 +1,43 @@
 
 
+### TO DO ###
+        
+# 1
+"""
+We need a function that receives a message via HTTP and checks the message flag, if it has the flag (TOPIC=RESERVATION) 
+I call the function 'reserve_spot', the 'reservation code' I have because we receive it with the HTTP message. 
+After this function finishes executing we send a message via MQTT to the eletric charger. 
+The other branch of the if will have the flag (TOPIC=FREEUP) and will take care of calling the function 'free_up_spot' 
+where the number of the spot to be freed is given to us via message from the web server. 
+            
+if (msg["topic flag"] == "RESERVATION):
+    ....
+elif (msg["topic flag"] == "FREEUP):
+    ....
+else:
+    ---ERROR MESSAGE---
+            
+"""
+  
+  
+#2
+"""
+a function is needed to check the messages arriving via MQTT from the electric charger. these messages will have the flag 
+(TOPIC=UPDATING) and within the if to check the flag the function 'update_availability' will be called, where the spot number 
+is obtained via the MQTT message received
+
+if (msg["topic flag"] == "UPDATING):
+    ....
+else:
+    ---ERROR MESSAGE---
+    
+"""   
+
+
+
+
+
+
 from threading import Thread
 import paho.mqtt.client as mqtt
 import random
@@ -171,11 +209,5 @@ class ChargingStation:
         we do not need to update the 'free spot' list because a spot has not become free, 
         but we have only received confirmation that the spot is in use
         """ 
-        
-                
-    ### TO DO ###
-    
-    # function to receve a http message with the reservation code from Web Server
-    
-    # function to receve a http message with the expiration time from Web Server
-        
+               
+            
