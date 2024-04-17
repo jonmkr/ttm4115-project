@@ -126,18 +126,33 @@ class ChargingStation:
     
     
     def free_up_spot(self, spot_number):
-        #Function with spot number as input, and frees up the spot in the lists in the control system
+        """
+        Function to clear a spot. 
+        This can happen because the recharge has been completed or because the reservation has expired 
+       
+        """
+        
+        # The spot number is passed on via MQTT and HTTP messages
         self.spot[spot_number]=None
+        
+        # We update which places are available in the 'free spot' list
         self.update_free_spot_list()
 
     
-    def update_availability(self, spot_number, update_massage):
-            # spot free -> none     spot reserved -> ""
-            if update_massage is None:
-                self.spot[spot_number] = None
-            else:
-                self.spot[spot_number] = ""
+    def update_availability(self, spot_number):
+        """
+        This function serves to confirm that the machine is in charge and thus changes 
+        the value in the 'spot number' position in the 'spot' list from 'reservation code' to "" 
+        (empty string)
+        
+        """
+        self.spot[spot_number] = ""
          
+        """
+        we do not need to update the 'free spot' list because a spot has not become free, 
+        but we have only received confirmation that the spot is in use
+        """ 
+        
                 
     ### TO DO ###
     
