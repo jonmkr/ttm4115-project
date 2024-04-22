@@ -28,12 +28,12 @@ class Reservation:
 
         self.stm = Machine('reservation', transitions, self, states)
 
-        output_queue.put(json.dumps({'type': 1, 'code': self.code}))
+        output_queue.put(json.dumps({'type': 'RESERVATION', 'code': self.code}))
 
     def reservation_timeout(self):
         print("Reservation", self.code, "expired")
         self.expired = True
-        output_queue.put(json.dumps({'type': 2, 'code': self.code}))
+        output_queue.put(json.dumps({'type': 'EXPIRATION', 'code': self.code}))
 
     def invalidate_reservation(self):
         print("Reservation", self.code, "set for removal")
@@ -51,7 +51,6 @@ locations = {}
 driver = Driver()
 driver.start(keep_active=True)
 
-
 @sock.route("/ws")
 def websocket(ws):
     data = ws.receive()
@@ -63,12 +62,29 @@ def websocket(ws):
     print(payload['name'] + " added")
 
     while True:
-        if not output_queue.empty():
-            ws.send(json.dumps(output_queue.get()))
 
         recv = ws.receive(timeout=1)
         if recv is not None:
             input_queue.put(json.loads(recv))
+
+        if not output_queue.empty():
+            ws.send(json.dumps(output_queue.get()))
+        
+        if not input_queue.empty():
+            msg = json.loads(json.loads(input_queue.get()))
+            if msg['type'] == "CONFIRMATION":
+                code = msg['reservation_code']
+                try:
+                    locations[location_id].reservations[code].dangling = True
+                except Exception as e:
+                    print(e)
+
+            if msg['type'] == "AVAILABILITY":
+                avl = msg['availability']
+                try:
+                    locations[location_id].availability = avl
+                except Exception as e:
+                    print(e)
 
 @app.route("/")
 @app.route("/locations")
@@ -141,4 +157,7 @@ def generatation_handler(location_id):
     return response
 
 if __name__ == "__main__":
-    app.run()
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        pass
