@@ -1,47 +1,5 @@
 
 
-### TO DO ###
-        
-# 1
-"""
-We need a function that receives a message via HTTP and checks the message flag, if it has the flag (TOPIC=RESERVATION) 
-I call the function 'reserve_spot', the 'reservation code' I have because we receive it with the HTTP message. 
-After this function finishes executing we send a message via MQTT to the eletric charger. 
-The other branch of the if will have the flag (TOPIC=FREEUP) and will take care of calling the function 'free_up_spot' 
-where the number of the spot to be freed is given to us via message from the web server. 
-            
-if (msg["type"] == "RESERVATION):
-    ....
-elif (msg["type"] == "EXPIRATION):
-    ....
-elif (msg["type"] == "CONFIRMATION"):
-    ....
-elif (msg["type"] == "AVAILABILITY"):
-    ....
-else:
-    ---ERROR MESSAGE---
-            
-"""
-  
-  
-#2
-"""
-a function is needed to check the messages arriving via MQTT from the electric charger. these messages will have the flag 
-(TOPIC=UPDATING) and within the if to check the flag the function 'update_availability' will be called, where the spot number 
-is obtained via the MQTT message received
-
-if (msg["topic flag"] == "UPDATING):
-    ....
-else:
-    ---ERROR MESSAGE---
-    
-"""   
-
-
-
-
-
-
 from threading import Thread
 import paho.mqtt.client as mqtt
 import random
@@ -76,7 +34,7 @@ class msg:
             "reservation_code" : reservation_code,
             # spot index used to free the spot in case of end of charge or expired booking
             "spot_position" : spot_position,
-            # flag indicating the type of message for HTTP communications (RESERVATION, EXPIRATION, OCCUPATION)
+            # flag indicating the type of message for HTTP communications (RESERVATION, EXPIRATION, CONFIRMATION)
             "type" : type_flag
         }
         
@@ -104,19 +62,19 @@ class ChargingStation:
     def on_message(self, client, userdata, msg):
         print("on_message(): topic: {}".format(msg.topic))
         
-        if msg.topic == "ARRIVAL":
+        if msg.topic == "arrivals":
     
             # This is for Arrival Messages
             try:
                 # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
                 # update availability to change from '(reservation_code)' to '' (empty string)
                 self.update_availability(msg["spot_position"])
-                msg["type"] = "OCCUPATION"
+                msg["type"] = "CONFIRMATION"
                 output_queue.put(json.dumps(msg))
             except:
                 print("Error with the occupation of a spot")
                 
-        elif msg.topic == "DEPARTURE":
+        elif msg.topic == "departures":
 
             # This is for Departure Messages
             try:
@@ -128,6 +86,7 @@ class ChargingStation:
             except:
                 print("Error with the free up of a spot")
 
+
     def start(self):
         self.client = mqtt.Client(callback_api_version = mqtt.CallbackAPIVersion.VERSION1)
         self.client.on_connect = self.on_connect
@@ -136,8 +95,8 @@ class ChargingStation:
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
         # There are 3 topics: Reserving, Updating, FreeUP a spot
-        self.client.subscribe("arrival")
-        self.client.subscribe("departure")
+        self.client.subscribe("arrivals")
+        self.client.subscribe("departures")
 
         thread = Thread(target=self.client.loop_forever)
         thread.start()
@@ -261,12 +220,12 @@ def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingSt
                 msg = input_queue.get()
                 if msg['type'] == "RESERVATION":
                     print("Received reservation with code", msg['reservation_code'])
-                    station.reserve_spot(msg)
+                    msg = station.reserve_spot(msg)
                     station.publish("reservations", msg)
-                    output_queue.put(json.dumps(msg))
+                    #output_queue.put(json.dumps())
                 elif msg['type'] == "EXPIRATION":
                     print("Cancel reservation (free up spot) for reservation with code", msg['reservation_code'])
-                    station.cancel_reservation(msg)
+                    msg = station.cancel_reservation(msg)
                     station.publish("expirations", msg) 
                     
 
