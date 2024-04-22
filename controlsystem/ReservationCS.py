@@ -76,7 +76,7 @@ class msg:
             "reservation_code" : reservation_code,
             # spot index used to free the spot in case of end of charge or expired booking
             "spot_position" : spot_position,
-            # flag indicating the type of message for HTTP communications (RESERVATION, EXPIRATION, AVAILABLE)
+            # flag indicating the type of message for HTTP communications (RESERVATION, EXPIRATION, OCCUPATION)
             "type" : type_flag
         }
         
@@ -104,28 +104,29 @@ class ChargingStation:
     def on_message(self, client, userdata, msg):
         print("on_message(): topic: {}".format(msg.topic))
         
-        # reservation code comes from Web Server throught Queue() function (Jon's writing the code)
-        reservation_code = Queue()
-        reserved_spot = self.reservation(reservation_code)
-        
-        message = {
-            "message" : "Spot Reserved - " + reservation_code,
-            "reservation code" : reservation_code,
-            "reserved spot" : reserved_spot
-        }
-        
-        # This is for Reservating Messages
-        try:
-            self.client.publish("Reserving", json.dumps(message))
-        except:
-            print("Unreserved spot")
-            
-        # This is for FreeUP Messages
-        try:
-            self.client.publish("FreeUp", "Free Spot Available")
-        except:
-            print("Error with the free up of a spot")
+        if msg.topic == "ARRIVAL":
+    
+            # This is for Arrival Messages
+            try:
+                # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
+                # update availability to change from '(reservation_code)' to '' (empty string)
+                self.update_availability(msg["spot_position"])
+                msg["type"] = "OCCUPATION"
+                output_queue.put(json.dumps(msg))
+            except:
+                print("Error with the occupation of a spot")
+                
+        elif msg.topic == "DEPARTURE":
 
+            # This is for Departure Messages
+            try:
+                # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
+                # free_up_spot to change from '' (empty string) to None
+                self.free_up_spot(msg["spot_position"])
+                msg["type"] = "EXPIRATION"
+                output_queue.put(json.dumps(msg))
+            except:
+                print("Error with the free up of a spot")
 
     def start(self):
         self.client = mqtt.Client(callback_api_version = mqtt.CallbackAPIVersion.VERSION1)
@@ -135,9 +136,8 @@ class ChargingStation:
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
         # There are 3 topics: Reserving, Updating, FreeUP a spot
-        self.client.subscribe("RESERVATION")
-        self.client.subscribe("UPDAITING")
-        self.client.subscribe("FREEUP")
+        self.client.subscribe("arrival")
+        self.client.subscribe("departure")
 
         thread = Thread(target=self.client.loop_forever)
         thread.start()
@@ -262,11 +262,13 @@ def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingSt
                 if msg['type'] == "RESERVATION":
                     print("Received reservation with code", msg['reservation_code'])
                     station.reserve_spot(msg)
+                    station.publish("reservations", msg)
                     output_queue.put(json.dumps(msg))
                 elif msg['type'] == "EXPIRATION":
                     print("Cancel reservation (free up spot) for reservation with code", msg['reservation_code'])
                     station.cancel_reservation(msg)
-                    output_queue.put(json.dumps(msg))
+                    station.publish("expirations", msg) 
+                    
 
 if __name__ == "__main__":
     station = ChargingStation()
