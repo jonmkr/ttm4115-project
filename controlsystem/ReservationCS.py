@@ -12,7 +12,7 @@ from queue import Queue
 STATION_NAME = "Elgeseter"
 CAPACITY = 10
 MQTT_PORT = 1883
-MQTT_BROKER = "broker.hivemq.com"
+MQTT_BROKER = "localhost"
 
 input_queue = Queue()
 output_queue = Queue()
@@ -61,18 +61,21 @@ class ChargingStation:
 
     def on_message(self, client, userdata, msg):
         print("on_message(): topic: {}".format(msg.topic))
-        
+
         if msg.topic == "arrivals":
-    
+            
+            msg = json.loads(msg.payload)
             # This is for Arrival Messages
             try:
                 # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
                 # update availability to change from '(reservation_code)' to '' (empty string)
+                print("Car arrived at charger #" + str(msg['spot_position']))
                 self.update_availability(msg["spot_position"])
                 msg["type"] = "CONFIRMATION"
+                msg["availability"] = len(self.free_spot)
                 output_queue.put(json.dumps(msg))
-            except:
-                print("Error with the occupation of a spot")
+            except Exception as e:
+                print("Error with the occupation of a spot: ", e)
                 
         elif msg.topic == "departures":
 
@@ -83,8 +86,8 @@ class ChargingStation:
                 self.free_up_spot(msg["spot_position"])
                 msg["type"] = "EXPIRATION"
                 output_queue.put(json.dumps(msg))
-            except:
-                print("Error with the free up of a spot")
+            except Exception as e:
+                print("Error with the free up of a spot: ", e)
 
 
     def start(self):
