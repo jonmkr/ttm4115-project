@@ -103,13 +103,13 @@ class ChargingStation:
         
         # This is for Reservating Messages
         try:
-            self.client.publish(TOPIC + "/Reserving", json.dumps(message))
+            self.client.publish("Reserving", json.dumps(message))
         except:
             print("Unreserved spot")
             
         # This is for FreeUP Messages
         try:
-            self.client.publish(TOPIC + "/FreeUp", "Free Spot Available")
+            self.client.publish("FreeUp", "Free Spot Available")
         except:
             print("Error with the free up of a spot")
 
