@@ -270,6 +270,7 @@ def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingSt
                     station.reserve_spot(msg)
                     output_queue.put(json.dumps(msg))
                 elif msg['type'] == "EXPIRATION":
+                    print("Cancel reservation (free up spot) for reservation with code", msg['reservation_code'])
                     station.cancel_reservation(msg)
                     output_queue.put(json.dumps(msg))
 
