@@ -120,7 +120,8 @@ t9 = {'trigger':'charger_available',
 #Transition from ban_user to available
 t10 = {'trigger':'charger_available',
        'source':'ban_user',
-       'target':'available'}
+       'target':'available',
+       'effect':'stop_timer("t1")'}
 
 
 # STATES
