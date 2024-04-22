@@ -161,7 +161,7 @@ class ChargingStation:
                 self.free_spot.append(index)
 
         
-    def reserve_spot(self, code_reservation):
+    def reserve_spot(self, msg):
         """
         Function that takes the 'reservation code' received via http from the web server as input. 
         This value is inserted into the 'spot' list at a random position among the available ones. 
@@ -175,7 +175,10 @@ class ChargingStation:
                 
         # We check if there are places available 
         if len(self.free_spot) == 0:
-            return None
+            msg["spot_position"] = None
+            msg["message"] = "Spot NOT reserved. No spot is available"
+            msg["available"] = 0
+            
         else:
             # We randomly choose a value within the list. 
             # This value is equivalent to the index of a free position within the 'spot' list.
@@ -186,13 +189,26 @@ class ChargingStation:
             self.free_spot.remove(spot_number)
             
             # We place in the 'spot' list in position, chosen randomly, the 'reservation code' of the reservation
-            self.spot[spot_number] = str(code_reservation)
+            self.spot[spot_number] = str(msg["reservation_code"])
             
-        return spot_number
-    
-    def cancel_reservation(reservation_code):
-        pass
-    
+            msg["spot_position"] = spot_number
+            msg["message"] = "Spot reserved"
+            msg["available"] = len(self.free_spot)
+            
+              
+    def cancel_reservation(self, msg):
+        """
+        This function receives the 'reservation code' and does a reservation check, when it finds 
+        the reserved spot with that code it releases it because the reservation has expired
+        
+        """
+        
+        reservation_code = msg["reservation_code"]
+        
+        for i in range(len(self.spot)):
+            if self.spot[i] == str(reservation_code):
+                self.spot[i] = None
+
     
     def free_up_spot(self, spot_number):
         """
@@ -242,9 +258,10 @@ def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingSt
                 msg = input_queue.get()
                 if msg['type'] == "RESERVATION":
                     print("Received reservation with code", msg['reservation_code'])
-                    station.reserve_spot(msg['reservation_code'])
+                    station.reserve_spot(msg)
+                    output_queue.put(json.dumps(msg))
                 elif msg['type'] == "EXPIRATION":
-                    station.cancel_reservation(msg['reservation_code'])
+                    station.cancel_reservation(msg)
 
 if __name__ == "__main__":
     station = ChargingStation()
