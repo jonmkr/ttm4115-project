@@ -76,10 +76,10 @@ class msg:
             "reservation_code" : reservation_code,
             # spot index used to free the spot in case of end of charge or expired booking
             "spot_position" : spot_position,
-            # flag indicating the type of message
+            # flag indicating the type of message for HTTP communications (RESERVATION, EXPIRATION, AVAILABLE)
             "type" : type_flag
         }
-
+        
 class ChargingStation:
     
     def __init__(self):
@@ -178,6 +178,7 @@ class ChargingStation:
             msg["spot_position"] = None
             msg["message"] = "Spot NOT reserved. No spot is available"
             msg["available"] = 0
+            msg["type"] = "RESERVATION"
             
         else:
             # We randomly choose a value within the list. 
@@ -194,7 +195,8 @@ class ChargingStation:
             msg["spot_position"] = spot_number
             msg["message"] = "Spot reserved"
             msg["available"] = len(self.free_spot)
-            
+            msg["type"] = "RESERVATION"
+
               
     def cancel_reservation(self, msg):
         """
@@ -208,6 +210,13 @@ class ChargingStation:
         for i in range(len(self.spot)):
             if self.spot[i] == str(reservation_code):
                 self.spot[i] = None
+                
+                self.update_free_spot_list()
+                
+                msg["available"] = len(self.free_spot)
+                msg["spot_position"] = None
+                msg["message"] = "Reservation Canceled"
+                msg["type"] = "EXPIRATION"
 
     
     def free_up_spot(self, spot_number):
@@ -262,6 +271,7 @@ def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingSt
                     output_queue.put(json.dumps(msg))
                 elif msg['type'] == "EXPIRATION":
                     station.cancel_reservation(msg)
+                    output_queue.put(json.dumps(msg))
 
 if __name__ == "__main__":
     station = ChargingStation()
