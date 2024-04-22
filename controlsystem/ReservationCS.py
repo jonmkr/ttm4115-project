@@ -108,6 +108,9 @@ class ChargingStation:
     
             # This is for Arrival Messages
             try:
+                # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
+                # update availability to change from '(reservation_code)' to '' (empty string)
+                self.update_availability(msg["spot_position"])
                 msg["type"] = "OCCUPATION"
                 output_queue.put(json.dumps(msg))
             except:
@@ -117,6 +120,9 @@ class ChargingStation:
 
             # This is for Departure Messages
             try:
+                # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
+                # free_up_spot to change from '' (empty string) to None
+                self.free_up_spot(msg["spot_position"])
                 msg["type"] = "EXPIRATION"
                 output_queue.put(json.dumps(msg))
             except:
