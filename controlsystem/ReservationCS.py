@@ -10,9 +10,13 @@ After this function finishes executing we send a message via MQTT to the eletric
 The other branch of the if will have the flag (TOPIC=FREEUP) and will take care of calling the function 'free_up_spot' 
 where the number of the spot to be freed is given to us via message from the web server. 
             
-if (msg["topic flag"] == "RESERVATION):
+if (msg["type"] == "RESERVATION):
     ....
-elif (msg["topic flag"] == "FREEUP):
+elif (msg["type"] == "EXPIRATION):
+    ....
+elif (msg["type"] == "CONFIRMATION"):
+    ....
+elif (msg["type"] == "AVAILABILITY"):
     ....
 else:
     ---ERROR MESSAGE---
@@ -44,9 +48,16 @@ import random
 import json
 from queue import Queue
 
+from websockets.sync.client import connect
+from queue import Queue
+
+STATION_NAME = "Elgeseter"
 CAPACITY = 10
 MQTT_PORT = 1883
-MQTT_BROKER = "mqtt.item.ntnu.no"
+MQTT_BROKER = "broker.hivemq.com"
+
+input_queue = Queue()
+output_queue = Queue()
 
 
 class msg:
@@ -55,16 +66,18 @@ class msg:
     RESERVATION, UPDATING, FREEUP_SPOT
     
     """
-    def __init__(self, text, reservation_code, spot_position, topic_flag):
+    def __init__(self, text, available, reservation_code, spot_position, type_flag):
         self.msg = {
             # content of the message to be printed on the screen
             "message" : text,
+            # number of available spots at charging station
+            "available": available,
             # reservation code used to check and manage bookings 
-            "reservation code" : reservation_code,
+            "reservation_code" : reservation_code,
             # spot index used to free the spot in case of end of charge or expired booking
-            "spot position" : spot_position,
-            # flag indicating the topic of the message, I don't know if we can also get it in another way 
-            "topic flag" : topic_flag
+            "spot_position" : spot_position,
+            # flag indicating the type of message
+            "type" : type_flag
         }
 
 class ChargingStation:
@@ -126,12 +139,8 @@ class ChargingStation:
         self.client.subscribe("UPDAITING")
         self.client.subscribe("FREEUP")
 
-        try:
-            thread = Thread(target=self.client.loop_forever)
-            thread.start()
-        except KeyboardInterrupt:
-            print("Interrupted")
-            self.client.disconnect()
+        thread = Thread(target=self.client.loop_forever)
+        thread.start()
   
 ###----------------------------------------------------------------------------------------------------###  
 
@@ -181,6 +190,9 @@ class ChargingStation:
             
         return spot_number
     
+    def cancel_reservation(reservation_code):
+        pass
+    
     
     def free_up_spot(self, spot_number):
         """
@@ -209,5 +221,34 @@ class ChargingStation:
         we do not need to update the 'free spot' list because a spot has not become free, 
         but we have only received confirmation that the spot is in use
         """ 
-               
+
+
+def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingStation):
+    with connect("ws://localhost:5000/ws") as ws:
+        payload = {'type': 'HANDSHAKE', 'id': 1, 'name': STATION_NAME, 'max_capacity': CAPACITY, 'availability': CAPACITY}
+
+        ws.send(json.dumps(payload))
+
+        while True:
+            try:
+                input_queue.put(json.loads(json.loads(ws.recv(timeout=1))))
+            except TimeoutError:
+                pass
             
+            if not output_queue.empty():
+                ws.send(json.dumps(output_queue.get()))
+            
+            if not input_queue.empty():
+                msg = input_queue.get()
+                if msg['type'] == "RESERVATION":
+                    print("Received reservation with code", msg['reservation_code'])
+                    station.reserve_spot(msg['reservation_code'])
+                elif msg['type'] == "EXPIRATION":
+                    station.cancel_reservation(msg['reservation_code'])
+
+if __name__ == "__main__":
+    station = ChargingStation()
+    station.start()
+
+    websocket_t = Thread(target=start_websocket, args=(input_queue, output_queue, station))
+    websocket_t.start()
