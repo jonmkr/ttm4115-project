@@ -163,8 +163,8 @@ class ChargingStation:
         
     def reserve_spot(self, msg):
         """
-        Function that takes the 'reservation code' received via http from the web server as input. 
-        This value is inserted into the 'spot' list at a random position among the available ones. 
+        Function that takes the message received via http from the web server as input. 
+        The value of the fild "reservation_code" is inserted into the 'spot' list at a random position among the available ones. 
         (How do I know which indices in the 'spot' list are available? The available 'spot' list 
         indices are inserted into the 'free spot' list)
         
