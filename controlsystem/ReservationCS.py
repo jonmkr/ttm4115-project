@@ -33,7 +33,7 @@ class msg:
             "reservation_code" : reservation_code,
             # spot index used to free the spot in case of end of charge or expired booking
             "spot_position" : spot_position,
-            # flag indicating the type of message for HTTP communications (RESERVATION, EXPIRATION, CONFIRMATION)
+            # flag indicating the type of message for HTTP communications (RESERVATION, EXPIRATION, CONFIRMATION) (CHARGE_OVER, DISCONNECTED)
             "type" : type_flag
         }
         
@@ -87,6 +87,29 @@ class ChargingStation:
                 output_queue.put(json.dumps(msg))
             except Exception as e:
                 print("Error with the free up of a spot: ", e)
+                
+        elif msg.topic == "charge_status":
+            
+            # This is for Charge Status Message
+            try:
+                # We receive a message via MQTT from Electric Charger, that informs us if the charge is done or not
+                msg["type"] = "CHARGE_OVER"
+                msg["text"] = "Charge is over"
+                output_queue.put(json.dumps(msg))
+            except Exception as e:
+                print("Error with the message about charging status: ", e)
+                
+        elif msg.topic == "car_disconnected":
+            
+            # This is for Car Disconnected Message
+            try:
+                # We receive a message via MQTT from Electric Charger, that the car is been disconnected
+                self.free_up_spot(msg["spot_position"])
+                msg["type"] = "DISCONNECTED"
+                msg["text"] = "Car is been disconnected"
+                output_queue.put(json.dumps(msg))
+            except Exception as e:
+                print("Error with the message about charging status: ", e)
 
 
     def start(self):
@@ -96,9 +119,15 @@ class ChargingStation:
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
-        # Update controller's messages
+        # Update controller's topics
         self.client.subscribe("arrivals")
         self.client.subscribe("departures")
+        
+        # Charging finished status
+        self.client.subscribe("charge_status")
+        
+        # Car Disconnected message
+        self.client.subscribe("car_disconnected")
 
         thread = Thread(target=self.client.loop_forever)
         thread.start()
