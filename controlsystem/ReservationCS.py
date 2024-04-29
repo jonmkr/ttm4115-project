@@ -7,7 +7,6 @@ import json
 from queue import Queue
 
 from websockets.sync.client import connect
-from queue import Queue
 
 STATION_NAME = "Elgeseter"
 CAPACITY = 10
