@@ -53,7 +53,6 @@ t0 = {'source': 'initial',
 booking_placed = {'trigger': 'Reserve',
       'source': 'Unbooked',
       'target': 'Booked',
-      ##MAKE SURE THAT THIS IS CHANGED FOR THE STM DRAWING SINCE THIS IS NOT AN ENTRY ANY MORE
       'effect': 'generate_reservation_key()'}
 
 left = {'trigger': 'Leaving',
@@ -80,6 +79,7 @@ Unbooked = {'name': 'Unbooked'}
 Booked = {'name': 'Booked',
        'entry': 'start_timer("t1", 5000)'
         }
+#To make the system testable, we did not put this at 15 min (900000 ms)
 
 Plugged_in = {'name': 'Plugged_in',
             'entry': 'stop_timer("t1")'}
@@ -87,6 +87,7 @@ Plugged_in = {'name': 'Plugged_in',
 Penalty = {'name': 'Penalty',
       'entry': 'start_timer("t2", 14400)'
       }
+#To make the system testable, we did not put this at 24 hours (8.64e+7 ms)
 
 
 ##Creating and starting the machine
