@@ -20,8 +20,7 @@ output_queue = Queue()
 
 class msg:
     """
-    This is the format of the message that is sent in all three cases: 
-    RESERVATION, UPDATING, FREEUP_SPOT
+    This is the format of the message that is sent in all the cases
     
     """
     def __init__(self, text, available, reservation_code, spot_position, type_flag):
@@ -97,7 +96,7 @@ class ChargingStation:
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
         self.client.connect(MQTT_BROKER, MQTT_PORT)
 
-        # There are 3 topics: Reserving, Updating, FreeUP a spot
+        # Update controller's messages
         self.client.subscribe("arrivals")
         self.client.subscribe("departures")
 
@@ -226,8 +225,9 @@ def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingSt
                     msg = station.reserve_spot(msg)
                     station.publish("reservations", msg)
                     #output_queue.put(json.dumps())
+                # EXPIRATION corresponds to 'free up spot' in sequence diagram 
                 elif msg['type'] == "EXPIRATION":
-                    print("Cancel reservation (free up spot) for reservation with code", msg['reservation_code'])
+                    print("Reservation with code {} expired", msg['reservation_code'])
                     msg = station.cancel_reservation(msg)
                     station.publish("expirations", msg) 
                     
