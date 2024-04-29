@@ -13,6 +13,7 @@ with connect("ws://localhost:5000/ws") as ws:
     while True:
         try:
             input_queue.put(json.loads(ws.recv(timeout=1)))
+    
         except TimeoutError:
             pass
         
