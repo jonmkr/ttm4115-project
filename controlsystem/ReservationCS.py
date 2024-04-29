@@ -4,13 +4,13 @@ from threading import Thread
 import paho.mqtt.client as mqtt
 import random
 import json
-from queue import Queue
+import asyncio
 
-from websockets.sync.client import connect
 from queue import Queue
+from websockets import connect, WebSocketClientProtocol
 
 STATION_NAME = "Elgeseter"
-CAPACITY = 10
+CAPACITY = 1
 MQTT_PORT = 1883
 MQTT_BROKER = "localhost"
 
@@ -78,6 +78,7 @@ class ChargingStation:
                 
         elif msg.topic == "departures":
 
+            msg = json.loads(msg.payload)
             # This is for Departure Messages
             try:
                 # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
@@ -178,7 +179,6 @@ class ChargingStation:
         msg["type"] = "RESERVATION"
 
         return msg
-    
               
     def cancel_reservation(self, msg):
         """
@@ -231,22 +231,23 @@ class ChargingStation:
         but we have only received confirmation that the spot is in use
         """ 
 
+async def handle_consumer(websocket: WebSocketClientProtocol, input_queue: Queue):
+    async for message in websocket:
+        await input_queue.put(json.loads(message))
 
-def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingStation):
-    with connect("ws://localhost:5000/ws") as ws:
+async def handle_producer(websocket: WebSocketClientProtocol, output_queue: Queue):
+    while True:
+        payload = output_queue.get()
+        await websocket.send(json.dumps(payload))
+
+async def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingStation):
+    async with connect("ws://localhost:5000/ws") as ws:
+        asyncio.gather(handle_consumer(ws, input_queue), handle_producer(ws, output_queue))
+
         payload = {'type': 'HANDSHAKE', 'id': 1, 'name': STATION_NAME, 'max_capacity': CAPACITY, 'availability': CAPACITY}
-
-        ws.send(json.dumps(payload))
+        await ws.send(json.dumps(payload))
 
         while True:
-            try:
-                input_queue.put(json.loads(json.loads(ws.recv(timeout=1))))
-            except TimeoutError:
-                pass
-            
-            if not output_queue.empty():
-                ws.send(json.dumps(output_queue.get()))
-            
             if not input_queue.empty():
                 msg = input_queue.get()
                 if msg['type'] == "RESERVATION":
@@ -265,5 +266,4 @@ if __name__ == "__main__":
     station = ChargingStation()
     station.start()
 
-    websocket_t = Thread(target=start_websocket, args=(input_queue, output_queue, station))
-    websocket_t.start()
+    asyncio.run(start_websocket(input_queue, output_queue, station))
