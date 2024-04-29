@@ -62,7 +62,6 @@ def websocket(ws):
     print(payload['name'] + " added")
 
     while True:
-
         recv = ws.receive(timeout=1)
         if recv is not None:
             input_queue.put(json.loads(recv))
