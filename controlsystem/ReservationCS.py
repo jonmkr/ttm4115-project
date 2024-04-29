@@ -12,7 +12,7 @@ from queue import Queue
 STATION_NAME = "Elgeseter"
 CAPACITY = 10
 MQTT_PORT = 1883
-MQTT_BROKER = "localhost"
+MQTT_BROKER = "broker.hivemq.com"
 
 input_queue = Queue()
 output_queue = Queue()
@@ -78,17 +78,23 @@ class ChargingStation:
                 
         elif msg.topic == "departures":
 
+            msg = json.loads(msg.payload)
+            
             # This is for Departure Messages
             try:
                 # We receive a message via MQTT from Electric Charger, from which we take the spot index and call the function 
                 # free_up_spot to change from '' (empty string) to None
                 self.free_up_spot(msg["spot_position"])
+                print("Car left the spot number #" + str(msg['spot_position']))
                 msg["type"] = "EXPIRATION"
                 output_queue.put(json.dumps(msg))
             except Exception as e:
                 print("Error with the free up of a spot: ", e)
                 
+        """     
         elif msg.topic == "charge_status":
+            
+            msg = json.loads(msg.payload)
             
             # This is for Charge Status Message
             try:
@@ -101,6 +107,8 @@ class ChargingStation:
                 
         elif msg.topic == "car_disconnected":
             
+            msg = json.loads(msg.payload)
+            
             # This is for Car Disconnected Message
             try:
                 # We receive a message via MQTT from Electric Charger, that the car is been disconnected
@@ -110,8 +118,9 @@ class ChargingStation:
                 output_queue.put(json.dumps(msg))
             except Exception as e:
                 print("Error with the message about charging status: ", e)
-
-
+       
+        """  
+    
     def start(self):
         self.client = mqtt.Client(callback_api_version = mqtt.CallbackAPIVersion.VERSION1)
         self.client.on_connect = self.on_connect
