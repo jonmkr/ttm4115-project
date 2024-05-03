@@ -73,7 +73,7 @@ t2 = {'trigger': 't2',
 Unbooked = {'name': 'Unbooked'}
 
 Booked = {'name': 'Booked',
-    'entry': 'start_timer("t1", 5000)',
+    'entry': 'start_timer("t1", 60000)',
     'exit': 'stop_timer("t1")'
     }
 
