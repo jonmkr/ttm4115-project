@@ -1,18 +1,19 @@
-
-
 from threading import Thread
 import paho.mqtt.client as mqtt
 import random
 import json
 import asyncio
+from io import BytesIO
 
 from queue import Queue
-from websockets import connect, WebSocketClientProtocol
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import requests
 
 STATION_NAME = "Elgeseter"
+STATION_ID = 1
 CAPACITY = 1
 MQTT_PORT = 1883
-MQTT_BROKER = "broker.hivemq.com"
+MQTT_BROKER = "localhost"
 
 input_queue = Queue()
 output_queue = Queue()
@@ -72,7 +73,7 @@ class ChargingStation:
                 self.update_availability(msg["spot_position"])
                 msg["type"] = "CONFIRMATION"
                 msg["availability"] = len(self.free_spot)
-                output_queue.put(json.dumps(msg))
+                output_queue.put(msg)
             except Exception as e:
                 print("Error with the occupation of a spot: ", e)
                 
@@ -86,8 +87,9 @@ class ChargingStation:
                 # free_up_spot to change from '' (empty string) to None
                 self.free_up_spot(msg["spot_position"])
                 print("Car left the spot number #" + str(msg['spot_position']))
-                msg["type"] = "EXPIRATION"
-                output_queue.put(json.dumps(msg))
+                msg['availability'] = len(self.free_spot)
+                msg["type"] = "AVAILABILITY"
+                output_queue.put(msg)
             except Exception as e:
                 print("Error with the free up of a spot: ", e)
                 
@@ -239,39 +241,58 @@ class ChargingStation:
         but we have only received confirmation that the spot is in use
         """ 
 
-async def handle_consumer(websocket: WebSocketClientProtocol, input_queue: Queue):
-    async for message in websocket:
-        await input_queue.put(json.loads(message))
+               
 
-async def handle_producer(websocket: WebSocketClientProtocol, output_queue: Queue):
+class Server(BaseHTTPRequestHandler):
+    def do_GET(self):
+        size = self.headers['Content-Length']
+        payload = self.rfile.read(int(size))
+        data = json.loads(payload)
+        print(data)
+        
+        input_queue.put(data)
+
+        self.send_response(200)
+        self.end_headers()
+
+def producer(output_queue: Queue):
     while True:
         payload = output_queue.get()
-        await websocket.send(json.dumps(payload))
+        payload['station_id'] = STATION_ID
+        requests.get("http://localhost:5000/connect", json=payload)
 
-async def start_websocket(input_queue: Queue, output_queue: Queue, station: ChargingStation):
-    async with connect("ws://localhost:5000/ws") as ws:
-        asyncio.gather(handle_consumer(ws, input_queue), handle_producer(ws, output_queue))
-
-        payload = {'type': 'HANDSHAKE', 'id': 1, 'name': STATION_NAME, 'max_capacity': CAPACITY, 'availability': CAPACITY}
-        await ws.send(json.dumps(payload))
-
-        while True:
-            if not input_queue.empty():
-                msg = input_queue.get()
-                if msg['type'] == "RESERVATION":
-                    print("Received reservation with code", msg['reservation_code'])
-                    msg = station.reserve_spot(msg)
-                    station.publish("reservations", msg)
-                    #output_queue.put(json.dumps())
-                # EXPIRATION corresponds to 'free up spot' in sequence diagram 
-                elif msg['type'] == "EXPIRATION":
-                    print("Reservation with code {} expired", msg['reservation_code'])
-                    msg = station.cancel_reservation(msg)
-                    station.publish("expirations", msg) 
-                    
+def consumer(input_queue: Queue, station: ChargingStation):
+    while True:
+        msg = input_queue.get()
+        if msg['type'] == "RESERVATION":
+            print("Received reservation with code", msg['reservation_code'])
+            msg = station.reserve_spot(msg)
+            station.client.publish("reservations", json.dumps(msg))
+        # EXPIRATION corresponds to 'free up spot' in sequence diagram 
+        elif msg['type'] == "EXPIRATION":
+            print("Reservation with code {} expired", msg['reservation_code'])
+            msg = station.cancel_reservation(msg)
+            station.client.publish("expirations", json.dumps(msg)) 
 
 if __name__ == "__main__":
     station = ChargingStation()
     station.start()
 
-    asyncio.run(start_websocket(input_queue, output_queue, station))
+    Thread(target=producer, args=(output_queue,)).start()
+    Thread(target=consumer, args = (input_queue, station,)).start()
+
+    handshake = {'type': 'HANDSHAKE', 
+                 'name': STATION_NAME, 
+                 'max_capacity': CAPACITY, 
+                 'availability': CAPACITY}
+
+    output_queue.put(handshake)
+
+    server = HTTPServer(("", 8080), Server)
+    print("Server initialized")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+    server.server_close()

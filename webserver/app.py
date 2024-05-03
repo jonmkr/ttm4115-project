@@ -6,9 +6,11 @@ from random import choice
 from string import ascii_uppercase
 from time import sleep
 
+import requests
 from flask import Flask, make_response, redirect, render_template, request
 from flask_sock import Sock
 from reservation_stm import states, transitions
+from simple_websocket import ConnectionClosed, Server
 from stmpy import Driver, Machine
 
 input_queue = Queue()
@@ -28,12 +30,12 @@ class Reservation:
 
         self.stm = Machine('reservation', transitions, self, states)
 
-        output_queue.put(json.dumps({'type': 'RESERVATION', 'code': self.code}))
+        send_request({'type': 'RESERVATION', 'reservation_code': self.code})
 
     def reservation_timeout(self):
         print("Reservation", self.code, "expired")
         self.expired = True
-        output_queue.put(json.dumps({'type': 'EXPIRATION', 'code': self.code}))
+        send_request({'type': 'EXPIRATION', 'reservation_code': self.code})
 
     def invalidate_reservation(self):
         print("Reservation", self.code, "set for removal")
@@ -51,39 +53,39 @@ locations = {}
 driver = Driver()
 driver.start(keep_active=True)
 
-@sock.route("/ws")
-def websocket(ws):
-    data = ws.receive()
-    payload = json.loads(data)
+from threading import Thread
 
-    location_id = payload.pop('id')
-    locations[location_id] = Location(payload['name'], payload['max_capacity'], payload['availability'])
 
-    print(payload['name'] + " added")
+def send_request(data):
+    requests.get("http://localhost:8080", json=data)
 
-    while True:
-        recv = ws.receive(timeout=1)
-        if recv is not None:
-            input_queue.put(json.loads(recv))
+@app.route("/connect")
+def handshake():
+    print("Received payload:", request.data)
+    data = json.loads(request.data)
+    station_id = data['station_id']
 
-        if not output_queue.empty():
-            ws.send(json.dumps(output_queue.get()))
-        
-        if not input_queue.empty():
-            msg = json.loads(json.loads(input_queue.get()))
-            if msg['type'] == "CONFIRMATION":
-                code = msg['reservation_code']
-                try:
-                    locations[location_id].reservations[code].dangling = True
-                except Exception as e:
-                    print(e)
+    if data['type'] == "HANDSHAKE":
+        locations[station_id] = Location(data['name'], data['max_capacity'], data['availability'])
+        print(data['name'], "added")
 
-            if msg['type'] == "AVAILABILITY":
-                avl = msg['availability']
-                try:
-                    locations[location_id].availability = avl
-                except Exception as e:
-                    print(e)
+    elif data['type'] == "CONFIRMATION":
+        code = data['reservation_code']
+        try:
+            locations[station_id].availability = data['availability']
+            if code:
+                locations[station_id].reservations[code].dangling = True
+        except Exception as e:
+            print(e)
+
+    if data['type'] == "AVAILABILITY":
+        avl = data['availability']
+        try:
+            locations[station_id].availability = avl
+        except Exception as e:
+            print(e)
+
+    return ('', 200)
 
 @app.route("/")
 @app.route("/locations")
@@ -113,14 +115,12 @@ def reservations_handler(location_id):
 
         reservation = None
         
-        print(request.cookies)
         if 'CODE' in request.cookies:
             code = request.cookies.get('CODE')
 
             if code in location.reservations:
                 reservation = location.reservations[code]
 
-        print("Reservation:", reservation)
         
         template = render_template("reservations.html", location=location, reservation_count=reservation_count, reservation=reservation)
 
@@ -156,7 +156,4 @@ def generatation_handler(location_id):
     return response
 
 if __name__ == "__main__":
-    try:
-        app.run()
-    except KeyboardInterrupt:
-        pass
+    app.run()
