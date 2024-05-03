@@ -55,7 +55,7 @@ class ChargingStation:
         self.free_spot = []
 
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, rc, properties):
         print("on_connect(): {}".format(mqtt.connack_string(rc)))
 
 
@@ -124,7 +124,7 @@ class ChargingStation:
         """  
     
     def start(self):
-        self.client = mqtt.Client(callback_api_version = mqtt.CallbackAPIVersion.VERSION1)
+        self.client = mqtt.Client(callback_api_version = mqtt.CallbackAPIVersion.VERSION2)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         print("Connecting to {}:{}".format(MQTT_BROKER, MQTT_PORT))
