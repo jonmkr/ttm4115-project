@@ -2,7 +2,6 @@ from threading import Thread
 import paho.mqtt.client as mqtt
 import random
 import json
-import asyncio
 from io import BytesIO
 
 from queue import Queue
@@ -254,7 +253,7 @@ class Server(BaseHTTPRequestHandler):
 
         self.send_response(200)
         self.end_headers()
-
+ 
 def producer(output_queue: Queue):
     while True:
         payload = output_queue.get()
