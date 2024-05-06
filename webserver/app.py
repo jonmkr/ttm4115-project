@@ -4,20 +4,16 @@ from datetime import datetime, timedelta
 from queue import Queue
 from random import choice
 from string import ascii_uppercase
-from time import sleep
 
 import requests
 from flask import Flask, make_response, redirect, render_template, request
-from flask_sock import Sock
 from reservation_stm import states, transitions
-from simple_websocket import ConnectionClosed, Server
 from stmpy import Driver, Machine
 
 input_queue = Queue()
 output_queue = Queue()
 
 app = Flask(__name__, template_folder="templates")
-sock = Sock(app)
 
 users = dict()
 
